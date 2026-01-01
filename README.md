@@ -1,4 +1,4 @@
-# PhotoCopySONY
+# PhotoSDSONY
 
 SDカード内の画像や動画を日付と拡張子ごとに整理しながらコピーするツール。
 
