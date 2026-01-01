@@ -188,18 +188,32 @@ class SDCardCopyTool:
             self.log(f"コピー元: {source}")
             self.log(f"コピー先: {destination}")
             
-            # DCIMフォルダのパス
-            dcim_path = os.path.join(source, "DCIM")
+            # コピー元にDCIM/CLIPが無いときに、選択ミスや階層違いでも拾えるように検索
+            def find_media_folders(base_path):
+                candidates = []
+                expected = [
+                    os.path.join(base_path, "DCIM"),
+                    os.path.join(base_path, "PRIVATE", "M4ROOT", "CLIP"),
+                ]
+                for p in expected:
+                    if os.path.isdir(p):
+                        candidates.append(p)
+                basename = os.path.basename(base_path).upper()
+                if basename in ("DCIM", "CLIP") and os.path.isdir(base_path):
+                    candidates.append(base_path)
+                if not candidates:
+                    for root, dirs, _ in os.walk(base_path):
+                        depth = root[len(base_path):].count(os.sep)
+                        if depth > 2:
+                            continue
+                        for d in dirs:
+                            if d.upper() in ("DCIM", "CLIP"):
+                                candidates.append(os.path.join(root, d))
+                        if candidates:
+                            break
+                return list(dict.fromkeys(candidates))
             
-            # PRIVATEフォルダ内のCLIPフォルダのパス
-            clip_path = os.path.join(source, "PRIVATE", "M4ROOT", "CLIP")
-            
-            # パスの存在確認
-            paths_to_check = []
-            if os.path.exists(dcim_path):
-                paths_to_check.append(dcim_path)
-            if os.path.exists(clip_path):
-                paths_to_check.append(clip_path)
+            paths_to_check = find_media_folders(source)
                 
             if not paths_to_check:
                 self.log("コピー元に有効なフォルダ構造が見つかりません。")
