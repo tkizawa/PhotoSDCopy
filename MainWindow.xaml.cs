@@ -10,16 +10,91 @@ using MetadataExtractor.Formats.Exif;
 using MetadataExtractor.Formats.QuickTime;
 using MetadataExtractor.Formats.Avi;
 using MetadataExtractor.Formats.Mpeg;
+using System.Text.Json;
 
 namespace PhotoSDCopy
 {
     public partial class MainWindow : Window
     {
         private bool _isRunning = false;
+        private readonly string SettingsFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "PhotoSDCopy", "settings.json");
+        private AppSettings _settings = new AppSettings();
 
         public MainWindow()
         {
             InitializeComponent();
+            LoadSettings();
+        }
+
+        private void LoadSettings()
+        {
+            try
+            {
+                if (File.Exists(SettingsFile))
+                {
+                    string json = File.ReadAllText(SettingsFile);
+                    var settings = JsonSerializer.Deserialize<AppSettings>(json);
+                    if (settings != null)
+                    {
+                        _settings = settings;
+                        SourceTextBox.Text = _settings.LastSource;
+                        DestTextBox.Text = _settings.LastDestination;
+                        
+                        if (!double.IsNaN(_settings.WindowTop)) Top = _settings.WindowTop;
+                        if (!double.IsNaN(_settings.WindowLeft)) Left = _settings.WindowLeft;
+                        if (_settings.WindowWidth > 0) Width = _settings.WindowWidth;
+                        if (_settings.WindowHeight > 0) Height = _settings.WindowHeight;
+                        WindowState = _settings.WindowState;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"設定の読み込みに失敗しました: {ex.Message}");
+            }
+        }
+
+        private void SaveSettings()
+        {
+            try
+            {
+                string? directory = Path.GetDirectoryName(SettingsFile);
+                if (directory != null && !System.IO.Directory.Exists(directory))
+                {
+                    System.IO.Directory.CreateDirectory(directory);
+                }
+
+                _settings.LastSource = SourceTextBox.Text.Trim();
+                _settings.LastDestination = DestTextBox.Text.Trim();
+                _settings.WindowState = WindowState;
+                if (WindowState == WindowState.Normal)
+                {
+                    _settings.WindowTop = Top;
+                    _settings.WindowLeft = Left;
+                    _settings.WindowWidth = Width;
+                    _settings.WindowHeight = Height;
+                }
+                else
+                {
+                    _settings.WindowTop = RestoreBounds.Top;
+                    _settings.WindowLeft = RestoreBounds.Left;
+                    _settings.WindowWidth = RestoreBounds.Width;
+                    _settings.WindowHeight = RestoreBounds.Height;
+                }
+                
+                string json = JsonSerializer.Serialize(_settings, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(SettingsFile, json);
+            }
+            catch (Exception)
+            {
+                // Ignore save errors on exit
+            }
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            SaveSettings();
+            base.OnClosed(e);
         }
 
         private void SourceBrowseButton_Click(object sender, RoutedEventArgs e)
@@ -335,5 +410,16 @@ namespace PhotoSDCopy
                 Dispatcher.Invoke(() => MessageBox.Show($"処理中にエラーが発生しました:\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error));
             }
         }
+    }
+
+    public class AppSettings
+    {
+        public string LastSource { get; set; } = "";
+        public string LastDestination { get; set; } = "";
+        public double WindowTop { get; set; } = double.NaN;
+        public double WindowLeft { get; set; } = double.NaN;
+        public double WindowWidth { get; set; } = 600;
+        public double WindowHeight { get; set; } = 500;
+        public WindowState WindowState { get; set; } = WindowState.Normal;
     }
 }
