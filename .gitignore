@@ -1,0 +1,25 @@
+# .NET Core / C#
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+.vs/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.log
+
+# Python / Virtual Environment (Legacy)
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env/
+.pytest_cache/
+.mypy_cache/
+
+# OS Generated
+Thumbs.db
+.DS_Store

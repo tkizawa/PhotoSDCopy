@@ -228,8 +228,8 @@ class SDCardCopyTool:
                 for root, _, files in os.walk(path):
                     for file in files:
                         file_path = os.path.join(root, file)
-                        # XMLファイルは除外
-                        if file.lower().endswith('.xml'):
+                        # XMLとCTGファイルは除外
+                        if file.lower().endswith('.xml') or file.lower().endswith('.ctg'):
                             continue
                         all_files.append(file_path)
             
